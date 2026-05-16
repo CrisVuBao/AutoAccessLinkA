@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="AutoAccessLinkA.MainPage"
+             BackgroundColor="#121212">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="20" Padding="30" MaximumWidthRequest="500" HorizontalOptions="Center">
+
+            <Image Source="dotnet_bot.png" HeightRequest="100" HorizontalOptions="Center" Margin="0,0,0,10"/>
+            <Label Text="Auto Access Link" FontSize="28" FontAttributes="Bold" TextColor="#00E676" HorizontalOptions="Center" />
+            <Label Text="Hệ thống điều khiển tham gia tự động" FontSize="14" TextColor="Gray" HorizontalOptions="Center" Margin="0,-15,0,10"/>
+
+            <Frame BackgroundColor="#1E1E1E" BorderColor="#333333" CornerRadius="10" Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Link Google Meet:" TextColor="White" FontSize="16" FontAttributes="Bold"/>
+                    <Entry x:Name="txtLink" Placeholder="https://meet.google.com/..." 
+                           PlaceholderColor="Gray" TextColor="White" BackgroundColor="#2D2D2D" ClearButtonVisibility="WhileEditing"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <Grid ColumnDefinitions="*, *" ColumnSpacing="15">
+
+                <Frame Grid.Column="0" BackgroundColor="#1E1E1E" BorderColor="#333333" CornerRadius="10" Padding="15">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Giờ tham gia:" TextColor="White" FontSize="16" FontAttributes="Bold"/>
+                        <TimePicker x:Name="timePicker" TextColor="#00A8FF" BackgroundColor="#2D2D2D" FontAttributes="Bold"/>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <Frame Grid.Column="1" BackgroundColor="#1E1E1E" BorderColor="#333333" CornerRadius="10" Padding="15">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Trình duyệt:" TextColor="White" FontSize="16" FontAttributes="Bold"/>
+                        <Picker x:Name="pickerBrowser" Title="Chọn trình duyệt" TitleColor="Gray" TextColor="#00A8FF" BackgroundColor="#2D2D2D">
+                        </Picker>
+                    </VerticalStackLayout>
+                </Frame>
+            </Grid>
+
+            <Button x:Name="btnStart" Text="🚀 THIẾT LẬP HẸN GIỜ" 
+                    BackgroundColor="#00E676" TextColor="Black" FontSize="16" FontAttributes="Bold"
+                    CornerRadius="8" HeightRequest="50" Margin="0,10,0,0"
+                    Clicked="OnStartClicked"/>
+
+            <Frame BackgroundColor="#0A0A0A" BorderColor="#333333" CornerRadius="10" Padding="15" Margin="0,10,0,0">
+                <VerticalStackLayout>
+                    <Label Text="Bảng trạng thái:" TextColor="Gray" FontSize="12" Margin="0,0,0,5"/>
+                    <ScrollView HeightRequest="150">
+                        <Label x:Name="lblLog" TextColor="#00FF00" FontSize="13" FontFamily="Consolas" />
+                    </ScrollView>
+                </VerticalStackLayout>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
