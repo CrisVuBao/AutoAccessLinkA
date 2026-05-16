@@ -36,8 +36,7 @@ namespace AutoAccessLinkA.Services
             await _firebaseClient
                 .Child("Commands")
                 .Child(commandId)
-                .Child("Status")
-                .PutAsync(status);
+                .PatchAsync(new { Status = status });
         }
 
 #if WINDOWS
