@@ -7,6 +7,17 @@ namespace AutoAccessLinkA
         public App()
         {
             InitializeComponent();
+
+            AppDomain.CurrentDomain.UnhandledException += (sender, error) =>
+            {
+                Serilog.Log.Fatal(error.ExceptionObject as Exception, "Ứng dụng bị crash (UnhandledException).");
+                Serilog.Log.CloseAndFlush();
+            };
+
+            TaskScheduler.UnobservedTaskException += (sender, error) =>
+            {
+                Serilog.Log.Error(error.Exception, "Lỗi Task chạy ngầm (UnobservedTaskException).");
+            };
         }
 
         protected override Window CreateWindow(IActivationState? activationState)
@@ -17,7 +28,7 @@ namespace AutoAccessLinkA
 #if WINDOWS
             window.Created += (s, e) =>
             {
-                CreateTrayIcon();
+                // CreateTrayIcon();
             };
 #endif
             return window;

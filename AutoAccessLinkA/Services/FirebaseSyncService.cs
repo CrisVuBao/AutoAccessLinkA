@@ -82,10 +82,12 @@ namespace AutoAccessLinkA.Services
                 {
                     try
                     {
+                        // Dùng chuỗi thời gian để mỗi lần Put lên Firebase là một giá trị MỚI hoàn toàn
+                        string currentTime = DateTime.UtcNow.ToString("o");
                         await _firebaseClient
                             .Child("Status")
                             .Child("ExecutorState")
-                            .PutAsync("Online");
+                            .PutAsync(currentTime);
                         await Task.Delay(30000); // 30s báo 1 lần
                     }
                     catch

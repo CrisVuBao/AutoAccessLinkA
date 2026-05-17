@@ -74,7 +74,7 @@
                 <VerticalStackLayout>
                     <Label Text="Bảng trạng thái:" TextColor="Gray" FontSize="12" Margin="0,0,0,5"/>
                     <ScrollView HeightRequest="150">
-                        <Label x:Name="lblLog" TextColor="#00FF00" FontSize="13" FontFamily="Consolas" />
+                        <Label x:Name="lblLog" TextColor="#00FF00" FontSize="13" />
                     </ScrollView>
                 </VerticalStackLayout>
             </Frame>

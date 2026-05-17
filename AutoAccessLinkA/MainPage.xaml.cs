@@ -9,6 +9,9 @@ namespace AutoAccessLinkA
     {
         private readonly FirebaseSyncService _firebaseSyncService;
 
+        // dòng này để theo dõi nhịp đập cuối cùng
+        private DateTime _lastHeartbeatTime = DateTime.MinValue;
+
         public ObservableCollection<SavedLink> SavedLinks { get; set; } = new ObservableCollection<SavedLink>();
         public ICommand DeleteLinkCommand { get; private set; }
 
@@ -58,11 +61,18 @@ namespace AutoAccessLinkA
                     }
                     else if (d.EventType == Firebase.Database.Streaming.FirebaseEventType.InsertOrUpdate)
                     {
-                        var item = SavedLinks.FirstOrDefault(x => x.Id == d.Object.Id);
+                        // Defensive: ignore unexpected null payloads
+                        if (d.Object == null)
+                        {
+                            LogMessage($"⚠️ Ignored null SavedLink event for key '{d.Key}'");
+                            return;
+                        }
+
+                        var item = SavedLinks.FirstOrDefault(x => x != null && x.Id == d.Object.Id);
                         if (item != null)
                         {
-                            item.Title = d.Object.Title;
-                            item.Url = d.Object.Url;
+                            item.Title = d.Object.Title ?? string.Empty;
+                            item.Url = d.Object.Url ?? string.Empty;
                             item.Browser = d.Object.Browser;
                         }
                         else
@@ -73,27 +83,61 @@ namespace AutoAccessLinkA
                 });
             });
 
-            // Lắng nghe trạng thái PC (Heartbeat)
+            //// Lắng nghe trạng thái PC (Heartbeat)
+            //_firebaseSyncService.GetPcStateAsObservable().Subscribe(d =>
+            //{
+            //    Dispatcher.Dispatch(() =>
+            //    {
+            //        if (d.Object == "Online")
+            //        {
+            //            pcStateDot.Fill = Colors.LimeGreen;
+            //            lblPcState.Text = "💻 PC đang hoạt động";
+            //        }
+            //    });
+            //});
+
+            //// Nếu PC offline quá 35s, tự động báo đỏ
+            //Dispatcher.StartTimer(TimeSpan.FromSeconds(35), () =>
+            //{
+            //    // Chỉ đổi màu đỏ nếu cần (Thực tế nên lưu timestamp báo cáo cuối cùng để check)
+            //    // Trong phiên bản đơn giản này, ta reset trạng thái nếu không nhận được heartbeat
+            //    pcStateDot.Fill = Colors.Red;
+            //    lblPcState.Text = "PC đang tắt";
+            //    return true;
+            //});
+
+            // 1. Lắng nghe trạng thái PC (Heartbeat)
             _firebaseSyncService.GetPcStateAsObservable().Subscribe(d =>
             {
                 Dispatcher.Dispatch(() =>
                 {
-                    if (d.Object == "Online")
+                    // Khi Firebase bắn event, nghĩa là PC vừa ghi một mốc thời gian mới lên
+                    if (d.EventType != Firebase.Database.Streaming.FirebaseEventType.Delete && !string.IsNullOrEmpty(d.Object))
                     {
+                        // Cập nhật lại mốc thời gian ngay lập tức
+                        _lastHeartbeatTime = DateTime.Now;
+
                         pcStateDot.Fill = Colors.LimeGreen;
                         lblPcState.Text = "💻 PC đang hoạt động";
                     }
                 });
             });
 
-            // Nếu PC offline quá 35s, tự động báo đỏ
-            Dispatcher.StartTimer(TimeSpan.FromSeconds(35), () =>
+            // 2. Chuyển Timer thành "Người canh gác" chạy mỗi 5 giây một lần
+            Dispatcher.StartTimer(TimeSpan.FromSeconds(5), () =>
             {
-                // Chỉ đổi màu đỏ nếu cần (Thực tế nên lưu timestamp báo cáo cuối cùng để check)
-                // Trong phiên bản đơn giản này, ta reset trạng thái nếu không nhận được heartbeat
-                pcStateDot.Fill = Colors.Red;
-                lblPcState.Text = "PC đang tắt";
-                return true;
+                // Tính toán xem từ lần cuối PC gửi tín hiệu đến giờ là bao nhiêu giây
+                double secondsSinceLastHeartbeat = (DateTime.Now - _lastHeartbeatTime).TotalSeconds;
+
+                // Nếu PC offline quá 35s (bị đứt mạng, tắt máy, v.v...)
+                if (secondsSinceLastHeartbeat > 35)
+                {
+                    pcStateDot.Fill = Colors.Red;
+                    lblPcState.Text = "PC đang tắt";
+                }
+                // else: Nếu nhỏ hơn 35s, PC vẫn đang trong giới hạn an toàn, UI giữ nguyên màu xanh
+
+                return true; // Tiếp tục vòng lặp Timer
             });
 
 #if WINDOWS
