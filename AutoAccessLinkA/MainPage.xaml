@@ -10,6 +10,11 @@
             <Image Source="dotnet_bot.png" HeightRequest="100" HorizontalOptions="Center" Margin="0,0,0,10"/>
             <Label Text="Auto Access Link" FontSize="28" FontAttributes="Bold" TextColor="#00E676" HorizontalOptions="Center" />
             <Label Text="Hệ thống điều khiển tham gia tự động" FontSize="14" TextColor="Gray" HorizontalOptions="Center" Margin="0,-15,0,10"/>
+            
+            <HorizontalStackLayout HorizontalOptions="Center" Spacing="8" Margin="0,-5,0,10">
+                <Ellipse x:Name="pcStateDot" WidthRequest="10" HeightRequest="10" Fill="Red" VerticalOptions="Center"/>
+                <Label x:Name="lblPcState" Text="PC Đang tắt" FontSize="12" TextColor="Gray" VerticalOptions="Center"/>
+            </HorizontalStackLayout>
 
             <Frame BackgroundColor="#1E1E1E" BorderColor="#333333" CornerRadius="10" Padding="15">
                 <VerticalStackLayout Spacing="10">
@@ -41,6 +46,29 @@
                     BackgroundColor="#00E676" TextColor="Black" FontSize="16" FontAttributes="Bold"
                     CornerRadius="8" HeightRequest="50" Margin="0,10,0,0"
                     Clicked="OnStartClicked"/>
+
+            <!-- Danh sách Link đã lưu -->
+            <Label Text="Danh sách Link đã lưu" TextColor="White" FontSize="16" FontAttributes="Bold" Margin="0,10,0,0"/>
+            <CollectionView x:Name="cvSavedLinks" HeightRequest="150" Margin="0,0,0,10">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame BackgroundColor="#1E1E1E" BorderColor="#333333" CornerRadius="8" Padding="10" Margin="0,0,0,10">
+                            <Grid ColumnDefinitions="*, Auto" VerticalOptions="Center">
+                                <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                                    <Label Text="{Binding Title}" TextColor="#00E676" FontSize="14" FontAttributes="Bold"/>
+                                    <Label Text="{Binding Url}" TextColor="Gray" FontSize="12" LineBreakMode="TailTruncation"/>
+                                </VerticalStackLayout>
+                                <Button Grid.Column="1" Text="❌" BackgroundColor="Transparent" TextColor="Red" FontSize="14" 
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=DeleteLinkCommand}" 
+                                        CommandParameter="{Binding .}" />
+                            </Grid>
+                            <Frame.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnSavedLinkTapped" CommandParameter="{Binding .}" />
+                            </Frame.GestureRecognizers>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
 
             <Frame BackgroundColor="#0A0A0A" BorderColor="#333333" CornerRadius="10" Padding="15" Margin="0,10,0,0">
                 <VerticalStackLayout>

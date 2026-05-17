@@ -1,5 +1,7 @@
 using AutoAccessLinkA.Models;
 using AutoAccessLinkA.Services;
+using System.Collections.ObjectModel;
+using System.Windows.Input;
 
 namespace AutoAccessLinkA
 {
@@ -7,10 +9,29 @@ namespace AutoAccessLinkA
     {
         private readonly FirebaseSyncService _firebaseSyncService;
 
+        public ObservableCollection<SavedLink> SavedLinks { get; set; } = new ObservableCollection<SavedLink>();
+        public ICommand DeleteLinkCommand { get; private set; }
+
         public MainPage()
         {
             InitializeComponent();
             _firebaseSyncService = new FirebaseSyncService();
+            
+            DeleteLinkCommand = new Command<SavedLink>(async (link) =>
+            {
+                if (link != null)
+                {
+                    bool confirm = await DisplayAlert("Xác nhận", $"Bạn có chắc muốn xoá link '{link.Title}'?", "Xoá", "Hủy");
+                    if (confirm)
+                    {
+                        await _firebaseSyncService.DeleteLinkAsync(link.Id);
+                    }
+                }
+            });
+
+            BindingContext = this;
+            cvSavedLinks.ItemsSource = SavedLinks;
+
             SetupUI();
         }
 
@@ -25,7 +46,60 @@ namespace AutoAccessLinkA
 
             LogMessage("Hệ thống khởi động thành công. Sẵn sàng nhận lệnh!");
 
+            // Lắng nghe danh sách Link đã lưu
+            _firebaseSyncService.GetSavedLinksAsObservable().Subscribe(d =>
+            {
+                Dispatcher.Dispatch(() =>
+                {
+                    if (d.EventType == Firebase.Database.Streaming.FirebaseEventType.Delete)
+                    {
+                        var item = SavedLinks.FirstOrDefault(x => x.Id == d.Key);
+                        if (item != null) SavedLinks.Remove(item);
+                    }
+                    else if (d.EventType == Firebase.Database.Streaming.FirebaseEventType.InsertOrUpdate)
+                    {
+                        var item = SavedLinks.FirstOrDefault(x => x.Id == d.Object.Id);
+                        if (item != null)
+                        {
+                            item.Title = d.Object.Title;
+                            item.Url = d.Object.Url;
+                            item.Browser = d.Object.Browser;
+                        }
+                        else
+                        {
+                            SavedLinks.Add(d.Object);
+                        }
+                    }
+                });
+            });
+
+            // Lắng nghe trạng thái PC (Heartbeat)
+            _firebaseSyncService.GetPcStateAsObservable().Subscribe(d =>
+            {
+                Dispatcher.Dispatch(() =>
+                {
+                    if (d.Object == "Online")
+                    {
+                        pcStateDot.Fill = Colors.LimeGreen;
+                        lblPcState.Text = "💻 PC đang hoạt động";
+                    }
+                });
+            });
+
+            // Nếu PC offline quá 35s, tự động báo đỏ
+            Dispatcher.StartTimer(TimeSpan.FromSeconds(35), () =>
+            {
+                // Chỉ đổi màu đỏ nếu cần (Thực tế nên lưu timestamp báo cáo cuối cùng để check)
+                // Trong phiên bản đơn giản này, ta reset trạng thái nếu không nhận được heartbeat
+                pcStateDot.Fill = Colors.Red;
+                lblPcState.Text = "PC đang tắt";
+                return true;
+            });
+
 #if WINDOWS
+            // Bật báo cáo Heartbeat
+            _ = _firebaseSyncService.StartPcHeartbeat();
+
             // Nếu là Windows (đóng vai trò Executor), bật lắng nghe Firebase
             LogMessage("Bật chế độ lắng nghe lệnh từ Firebase...");
             _firebaseSyncService.ListenForCommands(msg => 
@@ -33,6 +107,16 @@ namespace AutoAccessLinkA
                 Dispatcher.Dispatch(() => LogMessage(msg));
             });
 #endif
+        }
+
+        private void OnSavedLinkTapped(object sender, TappedEventArgs e)
+        {
+            if (e.Parameter is SavedLink link)
+            {
+                txtLink.Text = link.Url;
+                pickerBrowser.SelectedItem = link.Browser.ToString();
+                LogMessage($"Đã nạp nhanh link: {link.Title}");
+            }
         }
 
         private void LogMessage(string message)
@@ -85,6 +169,18 @@ namespace AutoAccessLinkA
                 };
 
                 await _firebaseSyncService.PushCommandAsync(command);
+
+                // Tự động lưu link nếu chưa có
+                if (!SavedLinks.Any(x => x.Url == link))
+                {
+                    string title = link.Length > 25 ? "Meet " + link.Substring(link.Length - 10) : link;
+                    await _firebaseSyncService.SaveLinkAsync(new SavedLink
+                    {
+                        Title = title,
+                        Url = link,
+                        Browser = command.Browser
+                    });
+                }
 
                 LogMessage("✅ Thiết lập và đồng bộ thành công! Lệnh đang chờ xử lý.");
             }

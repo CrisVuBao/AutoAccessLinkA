@@ -39,7 +39,63 @@ namespace AutoAccessLinkA.Services
                 .PatchAsync(new { Status = status });
         }
 
+        // --- TÍNH NĂNG SAVED LINKS ---
+        public async Task SaveLinkAsync(SavedLink link)
+        {
+            await _firebaseClient
+                .Child("SavedLinks")
+                .Child(link.Id)
+                .PutAsync(link);
+        }
+
+        public async Task DeleteLinkAsync(string linkId)
+        {
+            await _firebaseClient
+                .Child("SavedLinks")
+                .Child(linkId)
+                .DeleteAsync();
+        }
+
+        public IObservable<Firebase.Database.Streaming.FirebaseEvent<SavedLink>> GetSavedLinksAsObservable()
+        {
+            return _firebaseClient
+                .Child("SavedLinks")
+                .AsObservable<SavedLink>();
+        }
+
+        // --- TÍNH NĂNG ĐỒNG BỘ TRẠNG THÁI (HEARTBEAT) ---
+        public IObservable<Firebase.Database.Streaming.FirebaseEvent<string>> GetPcStateAsObservable()
+        {
+            return _firebaseClient
+                .Child("Status")
+                .Child("ExecutorState")
+                .AsObservable<string>();
+        }
+
 #if WINDOWS
+        // Báo cáo trạng thái PC liên tục (Heartbeat)
+        public async Task StartPcHeartbeat()
+        {
+            await Task.Run(async () =>
+            {
+                while (true)
+                {
+                    try
+                    {
+                        await _firebaseClient
+                            .Child("Status")
+                            .Child("ExecutorState")
+                            .PutAsync("Online");
+                        await Task.Delay(30000); // 30s báo 1 lần
+                    }
+                    catch
+                    {
+                        await Task.Delay(5000); // Chờ 5s rồi thử lại nếu lỗi
+                    }
+                }
+            });
+        }
+
         // Dùng cho Desktop để lắng nghe lệnh mới
         public void ListenForCommands(Action<string> onLogMessage)
         {

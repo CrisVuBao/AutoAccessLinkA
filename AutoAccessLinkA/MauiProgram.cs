@@ -1,4 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
+
+#if WINDOWS
+using H.NotifyIcon;
+#endif
 
 namespace AutoAccessLinkA
 {
@@ -9,6 +13,9 @@ namespace AutoAccessLinkA
             var builder = MauiApp.CreateBuilder();
             builder
                 .UseMauiApp<App>()
+#if WINDOWS
+                .UseNotifyIcon()
+#endif
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
